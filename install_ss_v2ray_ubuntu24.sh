@@ -97,10 +97,22 @@ generate_values() {
   # REALITY X25519 keypair
   local keypair
   keypair="$(xray x25519)"
-  REALITY_PRIVATE_KEY="$(awk '/Private key:/ {print $3}' <<<"$keypair")"
-  REALITY_PUBLIC_KEY="$(awk '/Public key:/ {print $3}' <<<"$keypair")"
+  REALITY_PRIVATE_KEY="$(
+    awk 'BEGIN{IGNORECASE=1} /private/{print; exit}' <<<"$keypair" |
+      grep -Eo '[A-Za-z0-9_+/=-]{20,}' |
+      head -n1 |
+      tr -d '"\r\n'
+  )"
+  REALITY_PUBLIC_KEY="$(
+    awk 'BEGIN{IGNORECASE=1} /public/{print; exit}' <<<"$keypair" |
+      grep -Eo '[A-Za-z0-9_+/=-]{20,}' |
+      head -n1 |
+      tr -d '"\r\n'
+  )"
 
   if [[ -z "$REALITY_PRIVATE_KEY" || -z "$REALITY_PUBLIC_KEY" ]]; then
+    echo "xray x25519 output:" >&2
+    printf '%s\n' "$keypair" >&2
     echo "Ошибка генерации REALITY ключей" >&2
     exit 1
   fi
